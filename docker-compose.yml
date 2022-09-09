@@ -22,8 +22,6 @@ services:
       - .development.env
     environment:
       PG_DATA: /var/lib/postgresql/data
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: admin
     volumes:
       - ./pgdata:/var/lib/postgresql/data
     restart: always
