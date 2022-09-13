@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { CacheInterceptor, CacheModule, Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { User } from "./users/user.entity";
@@ -10,10 +10,17 @@ import { AuthModule } from './auth/auth.module';
 import { PostModule } from './posts/post.module';
 import { Post} from './posts/post.entity';
 import { FileModule } from './files/file.module';
+import * as redisStore from 'cache-manager-redis-store';
+import { APP_INTERCEPTOR } from "@nestjs/core";
 
 @Module({
     exports: [],
-    providers: [],
+    providers: [
+        {
+            provide: APP_INTERCEPTOR,
+            useClass: CacheInterceptor,
+        },
+    ],
     controllers: [],
     imports: [
         ConfigModule.forRoot({
@@ -29,6 +36,12 @@ import { FileModule } from './files/file.module';
             entities: [User, Role, Post],
             synchronize: true,
             autoLoadEntities: true
+        }),
+        CacheModule.register({
+            isGlobal: true,
+            store: redisStore,
+            host: process.env.REDIS_HOST,
+            port: process.env.REDIS_PORT,
         }),
         UserModule,
         RoleModule,

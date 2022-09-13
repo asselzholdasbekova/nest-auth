@@ -1,21 +1,30 @@
-import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
+import { CACHE_MANAGER, HttpException, HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { RoleService } from "../roles/role.service";
 import { Repository } from "typeorm";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { User } from "./user.entity";
-import { debugPort } from "process";
 import { AssignRoleDto } from "./dto/assign-role.dto";
 import { BanUserDto } from "./dto/ban-user.dto";
+import { Cache } from 'cache-manager';
 
 @Injectable()
 export class UserService {
 
     constructor(@InjectRepository(User) private userRepository: Repository<User>,
-        private roleService: RoleService) {}
+                private roleService: RoleService,
+                @Inject(CACHE_MANAGER) private cacheService: Cache) {}
 
     async getById(id: number) {
-        const user = this.userRepository.findOne({ where: { id }, relations: { roles: true, posts: true } })
+        const cachedData = await this.cacheService.get(id.toString());
+        if(cachedData) {
+            console.log("Return from cach");
+            console.log(cachedData);
+            return cachedData;
+        }
+        
+        const user = this.userRepository.findOne({ where: { id }, relations: { roles: true, posts: true } });
+        await this.cacheService.set(id.toString(), (await user).email);
 
         return user;
     }

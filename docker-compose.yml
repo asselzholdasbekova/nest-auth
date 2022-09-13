@@ -12,6 +12,7 @@ services:
       - ./src:/app/src
     depends_on:
       - postgres
+      - redis
     restart: always
 
   postgres:
@@ -24,4 +25,12 @@ services:
       PG_DATA: /var/lib/postgresql/data
     volumes:
       - ./pgdata:/var/lib/postgresql/data
+    restart: always
+
+  redis: 
+    image: redis
+    ports: 
+      - 6379:6379
+    volumes:
+      - ./redisdata:/data
     restart: always

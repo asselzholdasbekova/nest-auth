@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards, UsePipes } from "@nestjs/common";
+import { Body, CacheInterceptor, CacheTTL, Controller, Get, Param, Post, UseGuards, UseInterceptors } from "@nestjs/common";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { UserService } from "./user.service";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
@@ -25,6 +25,7 @@ export class UserController {
 
     @ApiOperation({ summary: 'Returns user by id' })
     @ApiResponse({ status: 200, type: [User] })
+    @CacheTTL(30)
     @Get(':id')
     getById(@Param('id') id: number) {
         return this.userService.getById(id);
