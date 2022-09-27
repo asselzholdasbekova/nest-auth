@@ -1,4 +1,4 @@
-import { Body, CacheInterceptor, CacheTTL, Controller, Get, Param, Post, UseGuards, UseInterceptors } from "@nestjs/common";
+import { Body, CacheInterceptor, CacheTTL, CACHE_MANAGER, Controller, Get, Inject, Param, Post, UseGuards, UseInterceptors } from "@nestjs/common";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { UserService } from "./user.service";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
@@ -10,6 +10,7 @@ import { BanUserDto } from "./dto/ban-user.dto";
 import { AssignRoleDto } from "./dto/assign-role.dto";
 
 @ApiTags('Users')
+@UseInterceptors(CacheInterceptor)
 @Controller('/users')
 export class UserController {
 
@@ -25,7 +26,7 @@ export class UserController {
 
     @ApiOperation({ summary: 'Returns user by id' })
     @ApiResponse({ status: 200, type: [User] })
-    @CacheTTL(30)
+    @CacheTTL(100)
     @Get(':id')
     getById(@Param('id') id: number) {
         return this.userService.getById(id);

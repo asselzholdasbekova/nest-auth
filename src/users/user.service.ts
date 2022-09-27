@@ -6,26 +6,23 @@ import { CreateUserDto } from "./dto/create-user.dto";
 import { User } from "./user.entity";
 import { AssignRoleDto } from "./dto/assign-role.dto";
 import { BanUserDto } from "./dto/ban-user.dto";
-import { Cache } from 'cache-manager';
+import { Cache } from "cache-manager";
 
 @Injectable()
 export class UserService {
 
+    private DEFAULT_EXPIRATION = 3600;
+
     constructor(@InjectRepository(User) private userRepository: Repository<User>,
                 private roleService: RoleService,
-                @Inject(CACHE_MANAGER) private cacheService: Cache) {}
+                @Inject(CACHE_MANAGER) private cacheManager: Cache) {}
 
     async getById(id: number) {
-        const cachedData = await this.cacheService.get(id.toString());
-        if(cachedData) {
-            console.log("Return from cach");
-            console.log(cachedData);
-            return cachedData;
-        }
-        
-        const user = this.userRepository.findOne({ where: { id }, relations: { roles: true, posts: true } });
-        await this.cacheService.set(id.toString(), (await user).email);
+        const user = await this.getOrSetCache(`users:${id}`, () => {
+            const data = this.userRepository.findOne({ where: { id }, relations: { roles: true, posts: true } });
 
+            return data;
+        });
         return user;
     }
 
@@ -36,9 +33,25 @@ export class UserService {
     }
 
     async getAll() {
-        const users = this.userRepository.find({ relations: { roles: true } });
+        const users = await this.getOrSetCache('users', () => {
+            const data = this.userRepository.find({ relations: { roles: true } });
 
+            return data;
+        })
         return users;
+    }
+
+    getOrSetCache(key, cb) {
+        return new Promise((resolve, rejects) => {
+            this.cacheManager.get(key, async (error, data) => {
+                if(error) return rejects(error);
+                if(data!=null) return resolve(JSON.parse(data));
+                const freshData = await cb();
+                this.cacheManager.set(key, JSON.stringify(freshData), {ttl: this.DEFAULT_EXPIRATION});
+                
+                resolve(freshData);
+            })
+        })
     }
 
     async create(dto: CreateUserDto) {
